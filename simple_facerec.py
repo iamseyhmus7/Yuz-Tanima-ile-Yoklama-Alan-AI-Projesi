@@ -58,7 +58,7 @@ class SimpleFacerec:
         for face_encoding in face_encodings:
             # Yüzün bilinen yüzlerle eşleşip eşleşmediğine bakın
             matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-            name = "Bilinmiyor."
+            name = "Tanınamadı"
 
             # Eşleşme varsa, en yakın eşleşmeyi bulun
             face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding)
