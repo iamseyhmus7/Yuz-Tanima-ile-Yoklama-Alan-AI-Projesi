@@ -1,16 +1,43 @@
 import cv2
 from simple_facerec import SimpleFacerec
 from datetime import datetime
+import json 
 
-def yoklamayaYaz(name):
-    with open('yoklama.csv', 'r+') as f:
-        myDataList = f.readlines()
-        nameList = [entry.split(',')[0] for entry in myDataList]
+def yoklama(name):
+    #Json Olarak Okuma
+    try:
+        with open("yoklama.json","r") as json_file:
+            data = json.load(json_file)   # json_file nesnesinden JSON verilerini okuyarak Python veri yapısına (liste veya sözlük) dönüştürür ve data değişkenine atar.
 
-        if name not in nameList:
-            now = datetime.now()
-            dtString = now.strftime('%H:%M:%S')
-            f.writelines(f'\n{name},{dtString}')
+
+
+    except FileNotFoundError:
+        data = [] # Eğer dosya yoksa , boş bir liste döndür.
+    
+
+    # İsimler listesi oluştur
+    name_list = [entry["name"] for entry in data] # Mevcut verilerden (yani data listesindeki her kayıt) sadece isimleri alarak yeni bir liste oluşturur.
+                                                  # Bu liste, eklenmemiş isimleri kontrol etmek için kullanılacaktır.
+
+
+
+    # Eğer isim yoksa, yeni kayıt ekle
+    if name not in name_list:
+        now = datetime.now()
+        dtString = now.strftime('%H:%M:%S') # Şimdiki zamanı alır ve string formatına çevirir.
+
+
+        # Yeni kayıt oluştur
+        entry = {"name":name ,
+                  "zaman" : dtString}
+        data.append(entry)
+
+
+        #Json Dosyasına yaz
+        with open("yoklama.json" , "w") as file:
+            json.dump(data , file , indent=4) # indent=4 parametresi, dosyanın daha okunabilir olmasını sağlamak için her seviyeyi 4 boşluk ile girintiler.
+            
+
 
 # SimpleFacerec sınıfından bir örnek oluşturun
 sfr = SimpleFacerec()
@@ -32,7 +59,7 @@ while True:
         cv2.putText(frame, name, (x1, y1 - 10), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 200), 2)
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 4)
 
-        yoklamayaYaz(name)
+        yoklama(name)
 
     cv2.imshow("Frame", frame)
 
