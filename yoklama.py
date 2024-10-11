@@ -1,71 +1,62 @@
 import cv2
-from simple_facerec import SimpleFacerec
+import json
 from datetime import datetime
-import json 
+from simple_facerec import SimpleFacerec
 
+# Yoklama fonksiyonu
 def yoklama(name):
-    #Json Olarak Okuma
     try:
-        with open("yoklama.json","r") as json_file:
-            data = json.load(json_file)   # json_file nesnesinden JSON verilerini okuyarak Python veri yapısına (liste veya sözlük) dönüştürür ve data değişkenine atar.
-
-
-
+        with open("yoklama.json", "r") as json_file:
+            data = json.load(json_file)
     except FileNotFoundError:
-        data = [] # Eğer dosya yoksa , boş bir liste döndür.
+        data = []
     
-
-    # İsimler listesi oluştur
-    name_list = [entry["name"] for entry in data] # Mevcut verilerden (yani data listesindeki her kayıt) sadece isimleri alarak yeni bir liste oluşturur.
-                                                  # Bu liste, eklenmemiş isimleri kontrol etmek için kullanılacaktır.
-
-
-
-    # Eğer isim yoksa, yeni kayıt ekle
+    name_list = [entry["name"] for entry in data]
+    
     if name not in name_list:
         now = datetime.now()
-        dtString = now.strftime('%H:%M:%S') # Şimdiki zamanı alır ve string formatına çevirir.
-
-
-        # Yeni kayıt oluştur
-        entry = {"name":name ,
-                  "zaman" : dtString}
+        dtString = now.strftime('%d,%m, %A %H:%M:%S')
+        entry = {"name": name, "zaman": dtString}
         data.append(entry)
 
+        with open("yoklama.json", "w") as file:
+            json.dump(data, file, indent=4)
 
-        #Json Dosyasına yaz
-        with open("yoklama.json" , "w") as file:
-            json.dump(data , file , indent=4) # indent=4 parametresi, dosyanın daha okunabilir olmasını sağlamak için her seviyeyi 4 boşluk ile girintiler.
-            
+# Ana program
+if __name__ == "__main__":
+    # SimpleFacerec sınıfını başlatın ve kodlamaları yükleyin
+    sfr = SimpleFacerec()
+    sfr.load_and_train_model("images/", "face_encodings.pkl")
 
+    # Kodlamaları yükle
+    sfr.load_encoding_images("face_encodings.pkl")  # Daha önce eğitilmiş kodlamaları yükle
 
-# SimpleFacerec sınıfından bir örnek oluşturun
-sfr = SimpleFacerec()
+    # Kamerayı başlat
+    cap = cv2.VideoCapture(0)
 
-sfr.load_encoding_images("images/")  # Buradaki "images/" kısmını kendi klasör yapınıza göre ayarlayın
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Kamera görüntüsü alinamiyor!")
+            break
 
-# Kamerayı Yükle
-cap = cv2.VideoCapture(0)
+        # Yüzleri algıla ve tanı
+        face_locations, face_names = sfr.detect_known_faces(frame)        
+        for face_loc, name in zip(face_locations, face_names):
+            y1, x2, y2, x1 = face_loc[0], face_loc[1], face_loc[2], face_loc[3]
+            cv2.putText(frame, name, (x1, y1 - 10), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 200), 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 4)
 
-while True:
-    ret, frame = cap.read()
+            # Yoklama işlemi
+            yoklama(name)
 
-    # Yüzleri Algıla
-    face_locations, face_names = sfr.detect_known_faces(frame)
+        cv2.imshow("Yüz Tanima", frame)
 
-    for face_loc, name in zip(face_locations, face_names):
-        y1, x2, y2, x1 = face_loc[0], face_loc[1], face_loc[2], face_loc[3]
+        # ESC tuşuna basılırsa kamerayı durdur
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
 
-        cv2.putText(frame, name, (x1, y1 - 10), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 200), 2)
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 4)
-
-        yoklama(name)
-
-    cv2.imshow("Frame", frame)
-
-    key = cv2.waitKey(1)
-    if key == 27:
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    # Kamera serbest bırakılır ve pencereler kapatılır
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Yüz tanima işlemi tamamlandi.")
