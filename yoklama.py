@@ -1,7 +1,10 @@
 import cv2
 import json
+import time
 from datetime import datetime
 from simple_facerec import SimpleFacerec
+
+
 
 # Yoklama fonksiyonu
 def yoklama(name):
@@ -34,11 +37,22 @@ if __name__ == "__main__":
     # Kamerayı başlat
     cap = cv2.VideoCapture(0)
 
+
+    # Kamera Çözünürlüğünü arttırma 
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH , 1280) # Genişlik
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT , 720) # Yükseklik
+
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Kamera görüntüsü alinamiyor!")
             break
+
+
+        # Görüntüyü histogram eşitlemesi ile işleme
+        preprocessed_frame = sfr.preprocess_frame(frame)
+        face_locations, face_names = sfr.detect_known_faces(preprocessed_frame)
+
 
         # Yüzleri algıla ve tanı
         face_locations, face_names = sfr.detect_known_faces(frame)        
@@ -55,6 +69,8 @@ if __name__ == "__main__":
         # ESC tuşuna basılırsa kamerayı durdur
         if cv2.waitKey(1) & 0xFF == 27:
             break
+
+        time.sleep(0.5) # Her çerçeve arasında 0.5 salise bekleme süresi 
 
     # Kamera serbest bırakılır ve pencereler kapatılır
     cap.release()

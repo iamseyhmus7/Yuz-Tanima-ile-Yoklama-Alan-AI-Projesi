@@ -9,8 +9,16 @@ class SimpleFacerec:
     def __init__(self):
         self.known_face_encodings = [] # known_face_encodings: Tanınmış yüzlerin kodlamalarını saklamak için bir liste.
         self.known_face_names = []  # known_face_names: Tanınmış yüzlerin isimlerini saklamak için bir liste.
-        self.frame_resizing = 0.25  # Daha hızlı bir hız için çerçeveyi yeniden boyutlandır
+        self.frame_resizing = 0.75  # Daha hızlı bir hız için çerçeveyi yeniden boyutlandır
 
+    
+    # Histogram eşitlemesi ile görüntüyü işleme fonksiyonu 
+    def preprocess_frame(self , frame):
+        # Histogram eşitlemesi ile yüzlerin daha belirgin hale getirilmesi
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # Önce gri tonlamaya dönüştürülür
+        equalized = cv2.equalizeHist(gray)  # Gri tonlamalı görüntüye histogram eşitlemesi yapılır
+        return equalized  # Renkli formata geri dönüştürülmez, gri tonlamalı olarak devam eder
+    
 
     # Yüz Modeli Yükleme ve Eğitim Metodu
     def load_and_train_model(self, images_root_path, encoding_file_path): # images_root_path: Yüz görüntülerinin bulunduğu ana dizin yolu , # encoding_file_path: Kodlamaların kaydedileceği dosya yolu.
@@ -77,7 +85,7 @@ class SimpleFacerec:
             if True in matches:
                 face_distances = face_recognition.face_distance(self.known_face_encodings, face_encoding) # face_distances: Yüzlerin benzerliğini ölçmek için kullanılır.
                 best_match_index = np.argmin(face_distances) # best_match_index: En yakın eşleşmenin indeksini bulur.
-                if matches[best_match_index]:
+                if matches[best_match_index] and face_distances[best_match_index] <0.5:
                     name = self.known_face_names[best_match_index] # face_locations ve face_names döndürülerek, algılanan yüzlerin konumları ve isimleri geri gönderilir.
 
             face_names.append(name)
