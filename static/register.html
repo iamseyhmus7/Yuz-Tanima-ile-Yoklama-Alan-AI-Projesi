@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register UI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #F5F7FA;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            color: #4A90E2;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative; /* İkonun konumlandırılması için */
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            border-color: #4A90E2;
+            outline: none;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #888;
+        }
+
+        .toggle-password:hover {
+            color: #4A90E2;
+        }
+
+        .button {
+            width: 100%;
+            background: #E94E77;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background: #d7436c;
+        }
+
+        .link {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            color: #4A90E2;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Kayıt Ol</h2>
+        <form onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label for="name">Ad</label>
+                <input type="text" id="name" placeholder="Adınızı ve soyadınızı girin" required>
+            </div>
+            <div class="form-group">
+                <label for="email">E-posta</label>
+                <input type="email" id="email" placeholder="E-posta adresinizi girin" required>
+                <span class="error" id="email-error"></span>
+            </div>
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" placeholder="Şifrenizi girin" required>
+                <span class="toggle-password" onclick="togglePassword('password', this)">🔓</span>
+            </div>
+            <div class="form-group">
+                <label for="confirm-password">Şifreyi Onayla</label>
+                <input type="password" id="confirm-password" placeholder="Şifrenizi tekrar girin" required>
+                <span class="toggle-password" onclick="togglePassword('confirm-password', this)">🔓</span>
+                <span class="error" id="password-error"></span>
+            </div>
+            <button type="submit" class="button">Kayıt Ol</button>
+        </form>
+    </div>
+
+    <script>
+        async function handleRegister(event) {
+            event.preventDefault(); // Sayfa yenilemesini engelle
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const confirmPassword = document.getElementById('confirm-password').value.trim();
+            const emailError = document.getElementById('email-error');
+            const passwordError = document.getElementById('password-error');
+
+            // Hata mesajlarını temizle
+            emailError.textContent = '';
+            passwordError.textContent = '';
+
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@firat\.edu\.tr$/;
+
+            // E-posta doğrulama
+            if (!emailPattern.test(email)) {
+                emailError.textContent = 'Lütfen sadece @firat.edu.tr adresini kullanın.';
+                return;
+            }
+
+            // Şifre gücü doğrulama
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordPattern.test(password)) {
+                passwordError.textContent = 
+                    'Şifre en az 8 karakter uzunluğunda, bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir.';
+                return;
+            }
+
+            // Şifre eşleşmesi kontrolü
+            if (password !== confirmPassword) {
+                passwordError.textContent = 'Şifreler eşleşmiyor.';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, password }),
+                });
+
+                if (response.ok) {
+                    alert('Kayıt başarılı!');
+                    window.location.href = '/'; // Giriş sayfasına yönlendirme
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.detail === "Bu email ile kullanıcı zaten mevcut.") {
+                        emailError.textContent = 'Bu email ile kullanıcı zaten mevcut.';
+                    } else {
+                        alert('Kayıt hatası: ' + errorData.detail);
+                    }
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alert('Kayıt sırasında bir hata oluştu.');
+            }
+        }
+
+        function togglePassword(fieldId, icon) {
+            const field = document.getElementById(fieldId);
+            if (field.type === "password") {
+                field.type = "text";
+                icon.textContent = "🔓";
+            } else {
+                field.type = "password";
+                icon.textContent = "🔒";
+            }
+        }
+    </script>
+</body>
+</html>

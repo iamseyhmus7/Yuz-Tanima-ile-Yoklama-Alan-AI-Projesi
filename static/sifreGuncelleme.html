@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şifre Sıfırlama</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #F5F7FA;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            color: #4A90E2;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            border-color: #4A90E2;
+            outline: none;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+
+        .button {
+            width: 100%;
+            background: #E94E77;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background: #d7436c;
+        }
+
+        .link {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            color: #4A90E2;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Şifre Sıfırlama Bağlantısı Gönderme Arayüzü -->
+    <div class="container" id="reset-password-container">
+        <h2>Şifre Sıfırlama</h2>
+        <form onsubmit="handleResetLink(event)">
+            <div class="form-group">
+                <label for="reset-email">E-posta</label>
+                <input type="email" id="reset-email" placeholder="Hesabınızın e-postasını girin" required>
+                <span class="error" id="email-error"></span>
+            </div>
+            <button type="submit" class="button">Sıfırlama Bağlantısı Gönder</button>
+            <a href="/" class="link">Girişe Geri Dön</a>
+        </form>
+    </div>
+
+    <!-- Yeni Şifre Belirleme Arayüzü -->
+    <div class="container hidden" id="new-password-container">
+        <h2>Yeni Şifre Belirleyin</h2>
+        <form onsubmit="handleNewPassword(event)">
+            <div class="form-group">
+                <label for="new-password">Yeni Şifre</label>
+                <input type="password" id="new-password" placeholder="Yeni şifrenizi girin" required>
+                <span class="toggle-visibility" onclick="togglePasswordVisibility('new-password', this)">🔓</span>
+            </div>
+            <div class="form-group">
+                <label for="confirm-new-password">Yeni Şifreyi Onayla</label>
+                <input type="password" id="confirm-new-password" placeholder="Yeni şifrenizi tekrar girin" required>
+                <span class="toggle-visibility" onclick="togglePasswordVisibility('confirm-new-password', this)">🔓</span>
+                <span class="error" id="password-error"></span>
+            </div>
+            <button type="submit" class="button">Şifreyi Güncelle</button>
+        </form>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.textContent = "🔓";
+            } else {
+                input.type = "password";
+                icon.textContent = "🔒";
+            }
+        }
+
+        async function handleResetLink(event) {
+            event.preventDefault();
+            const email = document.getElementById('reset-email').value.trim();
+            const emailError = document.getElementById('email-error');
+            emailError.textContent = '';
+
+            if (!email) {
+                emailError.textContent = 'Lütfen e-posta adresinizi girin.';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/check-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+
+                if (response.ok) {
+                    alert('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+                    document.getElementById('reset-password-container').classList.add('hidden');
+                    document.getElementById('new-password-container').classList.remove('hidden');
+                } else {
+                    const errorData = await response.json();
+                    emailError.textContent = errorData.detail;
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+            }
+        }
+
+        async function handleNewPassword(event) {
+            event.preventDefault();
+            const newPassword = document.getElementById('new-password').value.trim();
+            const confirmNewPassword = document.getElementById('confirm-new-password').value.trim();
+            const passwordError = document.getElementById('password-error');
+            passwordError.textContent = '';
+
+            if (newPassword !== confirmNewPassword) {
+                passwordError.textContent = 'Şifreler eşleşmiyor.';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/update-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: document.getElementById('reset-email').value, password: newPassword }),
+                });
+
+                if (response.ok) {
+                    alert('Şifre başarıyla güncellendi.');
+                    window.location.href = '/';
+                } else {
+                    const errorData = await response.json();
+                    alert('Şifre güncelleme hatası: ' + errorData.detail);
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+            }
+        }
+    </script>
+</body>
+</html>

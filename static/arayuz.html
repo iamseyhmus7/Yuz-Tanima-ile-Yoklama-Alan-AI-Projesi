@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Öğrenci Devamsızlık Takip Sistemi</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #F5F7FA;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #4A90E2;
+            margin: 0;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+
+        .add-lesson, .lesson-list {
+            margin-bottom: 20px;
+        }
+
+        .add-lesson input {
+            width: 70%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .add-lesson button, .lesson-item button {
+            background: #4A90E2;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .lesson-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Öğrenci Devamsızlık Takip Sistemi</h1>
+    </div>
+
+    <div class="container">
+        <div class="add-lesson">
+            <input type="text" id="lesson-name" placeholder="Ders adını girin...">
+            <button onclick="addLesson()">Ders Ekle</button>
+        </div>
+
+        <div class="lesson-list" id="lesson-list">
+            <h2>Derslerim</h2>
+            <!-- Dersler dinamik olarak buraya eklenecek -->
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token'); // JWT token'ı localStorage'dan al
+
+        if (!token) {
+            alert("Lütfen giriş yapın.");
+            window.location.href = '/'; // Giriş sayfasına yönlendir
+        }
+
+        async function fetchLessons() {
+            try {
+                const response = await fetch("/get_lessons", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLessonList(data.lessons);
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || "Dersler alınırken hata oluştu.");
+                }
+            } catch (error) {
+                console.error("Hata:", error);
+                alert("Bir hata oluştu.");
+            }
+        }
+
+        async function addLesson() {
+            const lessonName = document.getElementById('lesson-name').value.trim();
+            if (!lessonName) {
+                alert("Lütfen bir ders adı girin.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/add_lesson", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ lesson_name: lessonName })
+                });
+
+                if (response.ok) {
+                    alert(`${lessonName} dersi başarıyla eklendi.`);
+                    fetchLessons();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || "Ders eklenirken hata oluştu.");
+                }
+            } catch (error) {
+                console.error("Hata:", error);
+            }
+        }
+
+        async function deleteLesson(lessonName) {
+            try {
+                const response = await fetch("/delete_lesson", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ lesson_name: lessonName })
+                });
+
+                if (response.ok) {
+                    alert(`${lessonName} dersi başarıyla silindi.`);
+                    fetchLessons();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || "Ders silinirken hata oluştu.");
+                }
+            } catch (error) {
+                console.error("Hata:", error);
+            }
+        }
+
+        function updateLessonList(lessons) {
+            const lessonList = document.getElementById('lesson-list');
+            lessonList.innerHTML = '<h2>Derslerim</h2>';
+            lessons.forEach(lessonName => {
+                const lessonItem = document.createElement('div');
+                lessonItem.className = 'lesson-item';
+                lessonItem.innerHTML = `
+                    <span>${lessonName}</span>
+                    <button onclick="deleteLesson('${lessonName}')">Dersi Sil</button>
+                `;
+                lessonList.appendChild(lessonItem);
+            });
+        }
+
+        // Sayfa yüklendiğinde ders listesini al
+        fetchLessons();
+    </script>
+</body>
+</html>
