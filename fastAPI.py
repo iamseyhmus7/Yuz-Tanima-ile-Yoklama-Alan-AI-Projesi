@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pymongo import MongoClient
@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from Models.BaseModeller import RegisterUser, LoginUsers, ResetPassword,LessonName
+from Models.BaseModeller import RegisterUser, LoginUsers, ResetPassword , CheckEmail
 import os
 from dotenv import load_dotenv
 
@@ -87,6 +87,11 @@ class UserService:
             raise HTTPException(status_code=404, detail="E-posta bulunamadı.")
         return True
     
+    def get_lessons_by_teacher(self, teacher_email: str):
+        lessons = list(self.collection_lesson.find({"email": teacher_email}, {"_id": 0, "lesson_name": 1}))
+        return lessons
+
+
 
 # FastAPI uygulaması
 app = FastAPI()
@@ -126,12 +131,13 @@ async def protected_route(token: str = Depends(oauth2_scheme)):
     return {"message": "Bu, korunan bir endpointtir!", "email": email}
 
 @app.get("/lessons")
-async def get_lessons():
-    # MongoDB'den tüm dersleri çek
-    lessons = list(user_service.collection_lesson.find({}, {"_id": 1, "lesson_name": 1}))
-    # ObjectId'yi stringe çevir
-    for lesson in lessons:
-        lesson["_id"] = str(lesson["_id"])
+async def get_lessons(teacher_email: str = Query(...)):
+    """
+    Öğretmenin e-posta adresine göre dersleri döndür.
+    """
+    lessons = user_service.get_lessons_by_teacher(teacher_email)
+    if not lessons:
+        raise HTTPException(status_code=404, detail="Bu öğretmen için ders bulunamadı.")
     return lessons
 
 
@@ -143,10 +149,10 @@ async def register_user(data: RegisterUser):
 @app.post("/login")
 async def login_user(data: LoginUsers):
     token = user_service.login_user(data.email, data.password)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "email": data.email}
 
 @app.post("/check-email")
-async def check_email(data: ResetPassword):
+async def check_email(data: CheckEmail):
     user_service.check_email(data.email)
     return {"message": "E-posta bulundu."}
 

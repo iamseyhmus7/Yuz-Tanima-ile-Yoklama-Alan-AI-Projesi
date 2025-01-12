@@ -153,6 +153,9 @@
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log("Kaydedilen e-posta:", data.email); // E-posta kontrolü için log ekleyin
+
+                    localStorage.setItem('teacherEmail', data.email); // E-posta adresini localStorage'a kaydet
                     alert('Giriş başarılı!');
                     window.location.href = '/arayuz'; // Başarılı giriş sonrası yönlendirme
                 } else {

@@ -199,38 +199,50 @@
 </footer>
 
 <script>
-  // Dersleri API'den Çekme
-  async function loadLessons() {
-    try {
-      const response = await fetch('/lessons'); // FastAPI API'si
-      const lessons = await response.json();
-
-      const lessonList = document.getElementById('lesson-list');
-      lessonList.innerHTML = ''; // Mevcut içeriği temizle
-
-      lessons.forEach(lesson => {
-        const lessonCard = document.createElement('div');
-        lessonCard.className = 'lesson-card';
-        lessonCard.innerHTML = `
-          <span>${lesson.lesson_name}</span>
-          <button onclick="startAttendance('${lesson._id}')">Yoklama Al</button>
-        `;
-        lessonList.appendChild(lessonCard);
-      });
-    } catch (error) {
-      console.error('Dersler yüklenirken hata oluştu:', error);
-    }
+  
+  document.addEventListener('DOMContentLoaded', async function () {
+  const teacherEmail = localStorage.getItem('teacherEmail'); // Girişte kaydedilen e-posta
+  if (!teacherEmail) {
+    alert('Giriş yapmanız gerekiyor.');
+    window.location.href = '/'; // Login sayfasına yönlendirin
+    return;
   }
 
+  try {
+    const response = await fetch(`/lessons?teacher_email=${encodeURIComponent(teacherEmail)}`);
+    if (!response.ok) {
+      throw new Error('Dersler yüklenemedi.');
+    }
+
+    const lessons = await response.json();
+    const lessonList = document.getElementById('lesson-list');
+    lessonList.innerHTML = ''; // Mevcut içeriği temizle
+
+    lessons.forEach(lesson => {
+      const lessonCard = document.createElement('div');
+      lessonCard.className = 'lesson-card';
+      lessonCard.innerHTML = `
+        <span>${lesson.lesson_name}</span>
+        <button onclick="startAttendance('${lesson.lesson_name}')">Yoklama Al</button>
+      `;
+      lessonList.appendChild(lessonCard);
+    });
+  } catch (error) {
+    console.error('Dersler yüklenirken hata oluştu:', error);
+  }
+});
+
+
+document.addEventListener('DOMContentLoaded', loadLessons);
   // Yoklama Başlatma ve Sonuçları Gösterme
-  async function startAttendance(lessonId) {
-    alert(`Yoklama başlatıldı: Ders ID ${lessonId}`);
+  async function startAttendance(lessonName) {
+    alert(`Yoklama başlatıldı: ${lessonName}`);
 
-    // Yoklama verilerini çek
     try {
-      const response = await fetch(`/attendance/${lessonId}`); // FastAPI'den yoklama sonuçları
-      const attendance = await response.json();
+      const response = await fetch(`/attendance?lesson_name=${lessonName}`);
+      if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
 
+      const attendance = await response.json();
       const attendanceList = document.getElementById('attendance-list');
       attendanceList.innerHTML = ''; // Mevcut içeriği temizle
 
