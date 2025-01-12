@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from Models.BaseModeller import RegisterUser, LoginUsers, ResetPassword, LessonName
+from Models.BaseModeller import RegisterUser, LoginUsers, ResetPassword,LessonName
 import os
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Sabitler
-SECRET_KEY = "secret-key-for-jwt"
+SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 50
 
@@ -87,22 +87,6 @@ class UserService:
             raise HTTPException(status_code=404, detail="E-posta bulunamadı.")
         return True
     
-    def add_lessonName(self, email: str, lesson_name: str):
-        existing_lesson = self.collection_lesson.find_one({"email": email, "lesson_name": lesson_name})
-        if existing_lesson:
-            raise HTTPException(status_code=400, detail="Bu ders zaten eklenmiş.")
-        result = self.collection_lesson.insert_one({"email": email, "lesson_name": lesson_name})
-        return {"message": "Ders başarıyla eklendi.", "lesson_id": str(result.inserted_id)}
-
-    def delete_lessonName(self, email: str, lesson_name: str):
-        result = self.collection_lesson.delete_one({"email": email, "lesson_name": lesson_name})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Bu ders bulunamadı.")
-        return {"message": "Ders başarıyla silindi."}
-
-    def get_lessons(self, email: str):
-        lessons = list(self.collection_lesson.find({"email": email}, {"_id": 0, "lesson_name": 1}))
-        return [lesson["lesson_name"] for lesson in lessons]
 
 # FastAPI uygulaması
 app = FastAPI()
@@ -141,11 +125,14 @@ async def protected_route(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Geçersiz kimlik bilgileri.")
     return {"message": "Bu, korunan bir endpointtir!", "email": email}
 
-@app.get("/get_lessons/{email}")
-async def get_lessons(email: str):
-    lessons = user_service.get_lessons(email)
-    return {"lessons": lessons}
-
+@app.get("/lessons")
+async def get_lessons():
+    # MongoDB'den tüm dersleri çek
+    lessons = list(user_service.collection_lesson.find({}, {"_id": 1, "lesson_name": 1}))
+    # ObjectId'yi stringe çevir
+    for lesson in lessons:
+        lesson["_id"] = str(lesson["_id"])
+    return lessons
 
 
 @app.post("/register")
@@ -167,13 +154,4 @@ async def check_email(data: ResetPassword):
 async def update_password(data: ResetPassword):
     user_service.update_password(data.email, data.password)
     return {"message": "Şifre başarıyla güncellendi."}
-
-@app.post("/add_lesson")
-async def add_lesson(data: LessonName):
-    return user_service.add_lessonName(data.email, data.lesson_name)
-
-@app.post("/delete_lesson")
-async def delete_lesson(data: LessonName):
-    return user_service.delete_lessonName(data.email, data.lesson_name)
-
 

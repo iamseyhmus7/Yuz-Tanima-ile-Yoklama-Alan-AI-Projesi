@@ -15,8 +15,9 @@ class ResetPassword(BaseModel):
     password : str
 
 class LessonName(BaseModel):
-    lesson_name : str
     email : EmailStr
+    lesson_name : str
+    
 
 
 """
