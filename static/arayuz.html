@@ -3,65 +3,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Paneli</title>
+  <title>Öğretmen Paneli</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    /* Genel Stil */
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f4f9;
     }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+
+    body {
+      display: flex;
+      flex-direction: column;
     }
-    h1 {
-      text-align: center;
+
+    .main {
+      display: flex;
+      flex: 1;
+      height: 100%;
+    }
+
+    /* Navbar */
+    .navbar {
+      background-color: #2c3e50;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .navbar .menu a {
+      color: white;
+      text-decoration: none;
+      font-size: 1rem;
+      margin-left: 15px;
+      transition: color 0.3s;
+    }
+
+    .navbar .menu a:hover {
+      color: #18bc9c;
+    }
+
+    /* Sol Bölüm (Derslerim) */
+    .sidebar {
+      width: 25%;
+      background-color: #34495e;
+      color: white;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
       margin-bottom: 20px;
-      color: #333;
+      font-size: 1.8rem;
+      text-align: center;
+      color: #ecf0f1;
     }
+
     .lesson-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
+
     .lesson-card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      background: #1abc9c;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    .lesson-card button {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
+      transition: background-color 0.3s, transform 0.2s;
       cursor: pointer;
     }
+
+    .lesson-card:hover {
+      background-color: #16a085;
+      transform: translateY(-3px);
+    }
+
+    .lesson-card span {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .lesson-card button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.2s;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+    }
+
     .lesson-card button:hover {
-      background-color: #218838;
+      background-color: #c0392b;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Sağ Bölüm */
+    .content {
+      flex: 1;
+      padding: 20px;
+      background: white;
+      overflow-y: auto;
+      border-left: 2px solid #ecf0f1;
+    }
+
+    .content h2 {
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #34495e;
+    }
+
+    .attendance-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .attendance-list li {
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #ecf0f1;
+      font-size: 1rem;
+    }
+
+    /* Footer */
+    footer {
+      background-color: #2c3e50;
+      color: white;
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: #18bc9c;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>Derslerim</h1>
-  <div class="lesson-list" id="lesson-list">
-    <!-- Ders kartları burada görünecek -->
+<!-- Navbar -->
+<div class="navbar">
+  <h1>Öğretmen Paneli</h1>
+  <div class="menu">
+    <a href="/">Çıkış</a>
   </div>
 </div>
+
+<div class="main">
+  <!-- Sol Bölüm: Derslerim -->
+  <div class="sidebar">
+    <h2>Derslerim</h2>
+    <div class="lesson-list" id="lesson-list">
+      <!-- Ders kartları burada görünecek -->
+    </div>
+  </div>
+
+  <!-- Sağ Bölüm: Yoklama Sonuçları -->
+  <div class="content">
+    <h2>Yoklama Sonuçları</h2>
+    <ul class="attendance-list" id="attendance-list">
+      <!-- Yoklama sonuçları burada görünecek -->
+    </ul>
+  </div>
+</div>
+
+<footer>
+  © 2025 Öğretmen Paneli. Tüm hakları saklıdır. | <a href="#">Destek Al</a>
+</footer>
 
 <script>
   // Dersleri API'den Çekme
   async function loadLessons() {
     try {
-      const response = await fetch('/lessons'); // FastAPI sunucusunun URL'si
+      const response = await fetch('/lessons'); // FastAPI API'si
       const lessons = await response.json();
 
       const lessonList = document.getElementById('lesson-list');
@@ -72,7 +213,7 @@
         lessonCard.className = 'lesson-card';
         lessonCard.innerHTML = `
           <span>${lesson.lesson_name}</span>
-          <button onclick="startAttendance('${lesson._id}')">Yoklama Başlat</button>
+          <button onclick="startAttendance('${lesson._id}')">Yoklama Al</button>
         `;
         lessonList.appendChild(lessonCard);
       });
@@ -81,9 +222,31 @@
     }
   }
 
-  // Yoklama Başlatma
-  function startAttendance(lessonId) {
+  // Yoklama Başlatma ve Sonuçları Gösterme
+  async function startAttendance(lessonId) {
     alert(`Yoklama başlatıldı: Ders ID ${lessonId}`);
+
+    // Yoklama verilerini çek
+    try {
+      const response = await fetch(`/attendance/${lessonId}`); // FastAPI'den yoklama sonuçları
+      const attendance = await response.json();
+
+      const attendanceList = document.getElementById('attendance-list');
+      attendanceList.innerHTML = ''; // Mevcut içeriği temizle
+
+      if (attendance.length === 0) {
+        attendanceList.innerHTML = '<li>Yoklama verisi bulunamadı.</li>';
+        return;
+      }
+
+      attendance.forEach(record => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${record.student_name} - ${record.status}`;
+        attendanceList.appendChild(listItem);
+      });
+    } catch (error) {
+      console.error('Yoklama sonuçları yüklenirken hata oluştu:', error);
+    }
   }
 
   // Sayfa Yüklendiğinde Dersleri Yükle
