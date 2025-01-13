@@ -204,24 +204,27 @@
 </footer>
 
 <script>
+  // Sayfa yüklendiğinde dersleri yükleme işlemi
   document.addEventListener('DOMContentLoaded', async function () {
-    const teacherEmail = localStorage.getItem('teacherEmail'); // Girişte kaydedilen e-posta
+    const teacherEmail = localStorage.getItem('teacherEmail'); // Girişte kaydedilen öğretmen e-postası
     if (!teacherEmail) {
       alert('Giriş yapmanız gerekiyor.');
-      window.location.href = '/'; // Login sayfasına yönlendirin
+      window.location.href = '/'; // Login sayfasına yönlendirme
       return;
     }
 
     try {
+      // Öğretmene ait dersleri sunucudan çek
       const response = await fetch(`/lessons?teacher_email=${encodeURIComponent(teacherEmail)}`);
       if (!response.ok) {
         throw new Error('Dersler yüklenemedi.');
       }
 
-      const lessons = await response.json();
+      const lessons = await response.json(); // Gelen ders verilerini JSON olarak al
       const lessonList = document.getElementById('lesson-list');
       lessonList.innerHTML = ''; // Mevcut içeriği temizle
 
+      // Her ders için bir kart oluştur ve listeye ekle
       lessons.forEach(lesson => {
         const lessonCard = document.createElement('div');
         lessonCard.className = 'lesson-card';
@@ -239,10 +242,11 @@
     }
   });
 
+  // Yoklama alma fonksiyonu
   async function startAttendance(lessonName) {
     alert(`Yoklama başlatıldı: ${lessonName}`);
 
-    // Kamera görüntüsünü yakalama
+    // Kamera görüntüsünü yakalama işlemi
     const video = document.createElement('video');
     video.style.display = 'none';
     document.body.appendChild(video);
@@ -252,15 +256,16 @@
       video.srcObject = stream;
       await video.play();
 
+      // Görüntüyü canvas üzerinde yakala ve base64 formatına çevir
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const imageData = canvas.toDataURL('image/jpeg'); // Base64
+      const imageData = canvas.toDataURL('image/jpeg'); // Base64 formatında görüntü verisi
 
-      // Backend'e gönder
+      // Yoklama verilerini sunucuya gönder
       const response = await fetch(`/attendance`, {
         method: 'POST',
         headers: {
@@ -285,8 +290,10 @@
     }
   }
 
+  // Yoklama sonuçlarını gösterme fonksiyonu
   async function showAttendanceResults(lessonName) {
     try {
+      // Sunucudan yoklama sonuçlarını çek
       const response = await fetch(`/attendance-results?lesson_name=${encodeURIComponent(lessonName)}`);
       if (!response.ok) throw new Error('Yoklama sonuçları yüklenemedi.');
 
@@ -294,6 +301,7 @@
       const attendanceList = document.getElementById('attendance-list');
       attendanceList.innerHTML = ''; // Mevcut içeriği temizle
 
+      // Her bir yoklama sonucunu listeye ekle
       results.forEach(result => {
         const listItem = document.createElement('li');
         listItem.textContent = `${result.student_name} ${result.ogrenciNo} - Durum: ${result.status} - Tarih: ${result.date}`;
