@@ -23,6 +23,8 @@ class StudentModel(BaseModel):
     soyad: str
     ogrenciNo: str
     fotograflar: List[str] # Fotoğrafın base64 formatında olması önerilir
+    lesson_name : List[str]  
+
 
 """
 Yukaridaki sınıflar, özellikle FastAPI gibi framework'lerde, gelen verilerin doğrulanmasını ve yönetilmesini sağlar.

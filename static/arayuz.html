@@ -100,7 +100,12 @@
       font-weight: bold;
     }
 
-    .lesson-card button {
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .button-group button {
       background-color: #e74c3c;
       color: white;
       border: none;
@@ -113,7 +118,7 @@
       box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
     }
 
-    .lesson-card button:hover {
+    .button-group button:hover {
       background-color: #c0392b;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
     }
@@ -199,41 +204,42 @@
 </footer>
 
 <script>
-  
   document.addEventListener('DOMContentLoaded', async function () {
-  const teacherEmail = localStorage.getItem('teacherEmail'); // Girişte kaydedilen e-posta
-  if (!teacherEmail) {
-    alert('Giriş yapmanız gerekiyor.');
-    window.location.href = '/'; // Login sayfasına yönlendirin
-    return;
-  }
-
-  try {
-    const response = await fetch(`/lessons?teacher_email=${encodeURIComponent(teacherEmail)}`);
-    if (!response.ok) {
-      throw new Error('Dersler yüklenemedi.');
+    const teacherEmail = localStorage.getItem('teacherEmail'); // Girişte kaydedilen e-posta
+    if (!teacherEmail) {
+      alert('Giriş yapmanız gerekiyor.');
+      window.location.href = '/'; // Login sayfasına yönlendirin
+      return;
     }
 
-    const lessons = await response.json();
-    const lessonList = document.getElementById('lesson-list');
-    lessonList.innerHTML = ''; // Mevcut içeriği temizle
+    try {
+      const response = await fetch(`/lessons?teacher_email=${encodeURIComponent(teacherEmail)}`);
+      if (!response.ok) {
+        throw new Error('Dersler yüklenemedi.');
+      }
 
-    lessons.forEach(lesson => {
-      const lessonCard = document.createElement('div');
-      lessonCard.className = 'lesson-card';
-      lessonCard.innerHTML = `
-        <span>${lesson.lesson_name}</span>
-        <button onclick="startAttendance('${lesson.lesson_name}')">Yoklama Al</button>
-      `;
-      lessonList.appendChild(lessonCard);
-    });
-  } catch (error) {
-    console.error('Dersler yüklenirken hata oluştu:', error);
-  }
-});
+      const lessons = await response.json();
+      const lessonList = document.getElementById('lesson-list');
+      lessonList.innerHTML = ''; // Mevcut içeriği temizle
 
+      lessons.forEach(lesson => {
+        const lessonCard = document.createElement('div');
+        lessonCard.className = 'lesson-card';
+        lessonCard.innerHTML = `
+          <span>${lesson.lesson_name}</span>
+          <div class="button-group">
+            <button onclick="startAttendance('${lesson.lesson_name}')">Yoklama Al</button>
+            <button onclick="showAttendanceResults('${lesson.lesson_name}')">Sonuçları Göster</button>
+          </div>
+        `;
+        lessonList.appendChild(lessonCard);
+      });
+    } catch (error) {
+      console.error('Dersler yüklenirken hata oluştu:', error);
+    }
+  });
 
-async function startAttendance(lessonName) {
+  async function startAttendance(lessonName) {
     alert(`Yoklama başlatıldı: ${lessonName}`);
 
     // Kamera görüntüsünü yakalama
@@ -242,45 +248,61 @@ async function startAttendance(lessonName) {
     document.body.appendChild(video);
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        await video.play();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      await video.play();
 
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const imageData = canvas.toDataURL('image/jpeg'); // Base64
+      const imageData = canvas.toDataURL('image/jpeg'); // Base64
 
-        // Backend'e gönder
-        const response = await fetch(`/attendance`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                lesson_name: lessonName,
-                image: imageData,
-            }),
-        });
+      // Backend'e gönder
+      const response = await fetch(`/attendance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lesson_name: lessonName,
+          image: imageData,
+        }),
+      });
 
-        if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
+      if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
 
-        const result = await response.json();
-        alert(result.message);
+      const result = await response.json();
+      alert(result.message);
 
-        // Kamerayı kapat
-        stream.getTracks().forEach(track => track.stop());
-        video.remove();
+      // Kamerayı kapat
+      stream.getTracks().forEach(track => track.stop());
+      video.remove();
     } catch (error) {
-        console.error('Yoklama sırasında hata oluştu:', error);
+      console.error('Yoklama sırasında hata oluştu:', error);
     }
-}
+  }
 
-  // Sayfa Yüklendiğinde Dersleri Yükle
-  document.addEventListener('DOMContentLoaded', loadLessons);
+  async function showAttendanceResults(lessonName) {
+    try {
+      const response = await fetch(`/attendance-results?lesson_name=${encodeURIComponent(lessonName)}`);
+      if (!response.ok) throw new Error('Yoklama sonuçları yüklenemedi.');
+
+      const results = await response.json();
+      const attendanceList = document.getElementById('attendance-list');
+      attendanceList.innerHTML = ''; // Mevcut içeriği temizle
+
+      results.forEach(result => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${result.student_name} ${result.ogrenciNo} - Durum: ${result.status} - Tarih: ${result.date}`;
+        attendanceList.appendChild(listItem);
+      });
+    } catch (error) {
+      console.error('Yoklama sonuçları yüklenirken hata oluştu:', error);
+    }
+  }
 </script>
 
 </body>
