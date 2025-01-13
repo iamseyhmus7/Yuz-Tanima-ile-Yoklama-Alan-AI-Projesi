@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import List  # List türünü içe aktarın
 
 # Kullanıcı modeli
 class RegisterUser(BaseModel):
@@ -16,6 +17,13 @@ class ResetPassword(BaseModel):
 
 class CheckEmail(BaseModel):
     email : EmailStr
+
+class StudentModel(BaseModel):
+    ad: str
+    soyad: str
+    ogrenciNo: str
+    fotograflar: List[str] # Fotoğrafın base64 formatında olması önerilir
+    lesson_name : str  
 
 
 """

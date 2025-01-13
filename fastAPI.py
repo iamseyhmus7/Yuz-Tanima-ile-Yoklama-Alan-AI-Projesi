@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query , Body
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pymongo import MongoClient
@@ -9,6 +9,10 @@ from fastapi.security import OAuth2PasswordBearer
 from Models.BaseModeller import RegisterUser, LoginUsers, ResetPassword , CheckEmail
 import os
 from dotenv import load_dotenv
+from fastapi import UploadFile
+import base64
+from io import BytesIO
+from PIL import Image
 
 # Çevresel değişkenleri yükle
 load_dotenv()
@@ -92,6 +96,19 @@ class UserService:
         return lessons
 
 
+# Yüz tanıma modeli entegrasyonu için fonksiyon
+def run_face_recognition(image, students):
+    # Bu fonksiyon algılanan yüzleri fotoğraflarla karşılaştıracak
+    detected_students = []
+    for student in students:
+        for photo in student.get("fotograflar", []):
+            # Fotoğrafları karşılaştırın (modelinizi kullanarak)
+            # Ornek: eğer model algılama yaparsa
+            if photo == "match":  # Bu kısmı kendi model fonksiyonunuza bağlı yapın
+                detected_students.append(student)
+                break
+    return detected_students
+
 
 # FastAPI uygulaması
 app = FastAPI()
@@ -161,3 +178,27 @@ async def update_password(data: ResetPassword):
     user_service.update_password(data.email, data.password)
     return {"message": "Şifre başarıyla güncellendi."}
 
+@app.post("/attendance")
+async def process_attendance(lesson_name: str = Body(...), image: str = Body(...)):
+    image_data = base64.b64decode(image.split(",")[1])
+    image = Image.open(BytesIO(image_data))
+
+    # Tüm öğrencilerı koleksiyondan al
+    students = list(mongo_db.collections["OgrenciBilgileri"].find({}, {"_id": 0, "ad": 1, "soyad": 1, "ogrenciNo": 1, "fotograflar": 1}))
+
+    detected_students = run_face_recognition(image, students)
+
+    now = datetime.now()
+
+    for student in students:
+        is_detected = any(s["ogrenciNo"] == student["ogrenciNo"] for s in detected_students)
+        status = "True" if is_detected else "False"
+        mongo_db.collections["YoklamaVeritabani"].insert_one({
+            "lesson_name": lesson_name,
+            "student_name": f"{student['ad']} {student['soyad']}",
+            "ogrenciNo": student["ogrenciNo"],
+            "date": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "status": status
+        })
+
+    return {"message": "Yoklama başarıyla kaydedildi."}

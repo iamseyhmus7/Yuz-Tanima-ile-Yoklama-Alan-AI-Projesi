@@ -236,30 +236,47 @@
 document.addEventListener('DOMContentLoaded', loadLessons);
   // Yoklama Başlatma ve Sonuçları Gösterme
   async function startAttendance(lessonName) {
-    alert(`Yoklama başlatıldı: ${lessonName}`);
+  alert(`Yoklama başlatıldı: ${lessonName}`);
 
-    try {
-      const response = await fetch(`/attendance?lesson_name=${lessonName}`);
-      if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
+  // Kamera görüntüsünü yakalama
+  const video = document.createElement('video');
+  video.style.display = 'none';
+  document.body.appendChild(video);
 
-      const attendance = await response.json();
-      const attendanceList = document.getElementById('attendance-list');
-      attendanceList.innerHTML = ''; // Mevcut içeriği temizle
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    await video.play();
 
-      if (attendance.length === 0) {
-        attendanceList.innerHTML = '<li>Yoklama verisi bulunamadı.</li>';
-        return;
-      }
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      attendance.forEach(record => {
-        const listItem = document.createElement('li');
-        listItem.textContent = `${record.student_name} - ${record.status}`;
-        attendanceList.appendChild(listItem);
-      });
-    } catch (error) {
-      console.error('Yoklama sonuçları yüklenirken hata oluştu:', error);
-    }
+    const imageData = canvas.toDataURL('image/jpeg');
+
+    // Backend'e gönder
+    const response = await fetch(`/attendance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ lesson_name: lessonName, image: imageData }),
+    });
+
+    if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
+
+    const result = await response.json();
+    alert(result.message);
+
+    // Kamerayı kapat
+    stream.getTracks().forEach(track => track.stop());
+    video.remove();
+  } catch (error) {
+    console.error('Yoklama sırasında hata oluştu:', error);
   }
+}
 
   // Sayfa Yüklendiğinde Dersleri Yükle
   document.addEventListener('DOMContentLoaded', loadLessons);
