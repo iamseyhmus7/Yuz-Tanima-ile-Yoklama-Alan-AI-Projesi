@@ -233,49 +233,50 @@
 });
 
 
-document.addEventListener('DOMContentLoaded', loadLessons);
-  // Yoklama Başlatma ve Sonuçları Gösterme
-  async function startAttendance(lessonName) {
-  alert(`Yoklama başlatıldı: ${lessonName}`);
+async function startAttendance(lessonName) {
+    alert(`Yoklama başlatıldı: ${lessonName}`);
 
-  // Kamera görüntüsünü yakalama
-  const video = document.createElement('video');
-  video.style.display = 'none';
-  document.body.appendChild(video);
+    // Kamera görüntüsünü yakalama
+    const video = document.createElement('video');
+    video.style.display = 'none';
+    document.body.appendChild(video);
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    await video.play();
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await video.play();
 
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const imageData = canvas.toDataURL('image/jpeg');
+        const imageData = canvas.toDataURL('image/jpeg'); // Base64
 
-    // Backend'e gönder
-    const response = await fetch(`/attendance`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ lesson_name: lessonName, image: imageData }),
-    });
+        // Backend'e gönder
+        const response = await fetch(`/attendance`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                lesson_name: lessonName,
+                image: imageData,
+            }),
+        });
 
-    if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
+        if (!response.ok) throw new Error('Yoklama verileri yüklenemedi.');
 
-    const result = await response.json();
-    alert(result.message);
+        const result = await response.json();
+        alert(result.message);
 
-    // Kamerayı kapat
-    stream.getTracks().forEach(track => track.stop());
-    video.remove();
-  } catch (error) {
-    console.error('Yoklama sırasında hata oluştu:', error);
-  }
+        // Kamerayı kapat
+        stream.getTracks().forEach(track => track.stop());
+        video.remove();
+    } catch (error) {
+        console.error('Yoklama sırasında hata oluştu:', error);
+    }
 }
 
   // Sayfa Yüklendiğinde Dersleri Yükle
