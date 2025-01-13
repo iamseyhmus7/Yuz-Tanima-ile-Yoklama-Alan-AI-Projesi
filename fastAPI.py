@@ -2,7 +2,7 @@ import pickle
 import base64
 import face_recognition
 from fastapi import FastAPI, HTTPException, Depends, Query, Body, UploadFile, Form, File
-from Models.BaseModeller import RegisterUser , LoginUsers , ResetPassword,CheckEmail , StudentModel
+from Models.BaseModeller import RegisterUser , LoginUsers , ResetPassword, CheckEmail , StudentModel
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pymongo import MongoClient
@@ -15,26 +15,26 @@ from io import BytesIO
 from PIL import Image
 import os
 
-# Load environment variables
+# Çevresel değişkenleri yükle
 load_dotenv()
 
-# Constants
+# Sabitler
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 50
 
-# Password hashing and OAuth2 setup
+# Şifreleme ve OAuth2 ayarları
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# MongoDB connection class
+# MongoDB bağlantı sınıfı
 class MongoDB:
     def __init__(self, uri, db_name, collection_names):
         self.client = MongoClient(uri)
         self.db = self.client[db_name]
         self.collections = {name: self.db[name] for name in collection_names}
 
-# JWT utility class
+# JWT yardımcı sınıfı
 class JWTUtility:
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -51,7 +51,7 @@ class JWTUtility:
         except JWTError:
             return None
 
-# Password utility class
+# Şifre yardımcı sınıfı
 class PasswordUtility:
     @staticmethod
     def hash_password(password: str) -> str:
@@ -61,7 +61,7 @@ class PasswordUtility:
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
 
-# User service class
+# Kullanıcı servisi sınıfı
 class UserService:
     def __init__(self, db):
         self.collection = db["OgretmenBilgileri"]
@@ -69,7 +69,7 @@ class UserService:
 
     def register_user(self, name: str, email: str, password: str):
         if self.collection.find_one({"email": email}):
-            raise HTTPException(status_code=400, detail="This email is already registered.")
+            raise HTTPException(status_code=400, detail="Bu e-posta zaten kayıtlı.")
         hashed_password = PasswordUtility.hash_password(password)
         result = self.collection.insert_one({"name": name, "email": email, "password": hashed_password})
         return str(result.inserted_id)
@@ -77,32 +77,32 @@ class UserService:
     def login_user(self, email: str, password: str):
         user = self.collection.find_one({"email": email})
         if not user or not PasswordUtility.verify_password(password, user["password"]):
-            raise HTTPException(status_code=401, detail="Invalid email or password.")
+            raise HTTPException(status_code=401, detail="Geçersiz e-posta veya şifre.")
         return JWTUtility.create_access_token({"sub": email})
 
     def check_email(self, email: str):
         if not self.collection.find_one({"email": email}):
-            raise HTTPException(status_code=404, detail="No user found with this email.")
+            raise HTTPException(status_code=404, detail="Bu e-postayla kayıtlı kullanıcı bulunamadı.")
         return True
 
     def update_password(self, email: str, new_password: str):
         hashed_password = PasswordUtility.hash_password(new_password)
         result = self.collection.update_one({"email": email}, {"$set": {"password": hashed_password}})
         if result.modified_count != 1:
-            raise HTTPException(status_code=404, detail="Email not found.")
+            raise HTTPException(status_code=404, detail="E-posta bulunamadı.")
         return True
-
+    # belirtilen e-posta adresine ait dersleri alır.
     def get_lessons_by_teacher(self, teacher_email: str):
         lessons = list(self.collection_lesson.find({"email": teacher_email}, {"_id": 0, "lesson_name": 1}))
         return lessons
 
-# Load face_encodings.pkl model
+# face_encodings.pkl modelini yükle
 with open("face_encodings.pkl", "rb") as file:
     known_face_encodings = pickle.load(file)
 
-# Face recognition function
+# Yüz tanıma fonksiyonu
 def run_face_recognition(image_data):
-    # Decode base64 image if necessary
+    # Gerekirse base64 görüntüyü çöz
     if isinstance(image_data, str) and image_data.startswith("data:image"):
         image_data = base64.b64decode(image_data.split(",")[1])
 
@@ -137,11 +137,11 @@ def run_face_recognition(image_data):
 
     return detected_students
 
-# FastAPI application
+# FastAPI uygulaması
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# MongoDB initialization
+# MongoDB başlatma
 mongo_db = MongoDB(
     uri=os.getenv("MONGO_CLIENT"),
     db_name=os.getenv("DATABASE_NAME"),
@@ -150,7 +150,7 @@ mongo_db = MongoDB(
 
 user_service = UserService(mongo_db.collections)
 
-# Endpoints
+# Endpointler
 @app.get("/", response_class=HTMLResponse)
 async def login_page():
     return FileResponse("static/login.html")
@@ -171,20 +171,20 @@ async def dashboard():
 async def protected_route(token: str = Depends(oauth2_scheme)):
     email = JWTUtility.verify_token(token)
     if not email:
-        raise HTTPException(status_code=401, detail="Invalid credentials.")
-    return {"message": "This is a protected endpoint!", "email": email}
+        raise HTTPException(status_code=401, detail="Geçersiz kimlik bilgileri.")
+    return {"message": "Bu korunan bir endpointtir!", "email": email}
 
 @app.get("/lessons")
 async def get_lessons(teacher_email: str = Query(...)):
     lessons = user_service.get_lessons_by_teacher(teacher_email)
     if not lessons:
-        raise HTTPException(status_code=404, detail="No lessons found for this teacher.")
+        raise HTTPException(status_code=404, detail="Bu öğretmen için ders bulunamadı.")
     return lessons
 
 @app.post("/register")
 async def register_user(data: RegisterUser):
     user_id = user_service.register_user(data.name, data.email, data.password)
-    return {"message": "Registration successful!", "user_id": user_id}
+    return {"message": "Kayıt başarılı!", "user_id": user_id}
 
 @app.post("/login")
 async def login_user(data: LoginUsers):
@@ -194,12 +194,12 @@ async def login_user(data: LoginUsers):
 @app.post("/check-email")
 async def check_email(data: CheckEmail):
     user_service.check_email(data.email)
-    return {"message": "Email found."}
+    return {"message": "E-posta bulundu."}
 
 @app.post("/update-password")
 async def update_password(data: ResetPassword):
     user_service.update_password(data.email, data.password)
-    return {"message": "Password successfully updated."}
+    return {"message": "Şifre başarıyla güncellendi."}
 
 @app.post("/attendance")
 async def process_attendance(lesson_name: str = Body(...), image: str = Body(...)):
@@ -216,7 +216,7 @@ async def process_attendance(lesson_name: str = Body(...), image: str = Body(...
             "student_name": f"{student['ad']} {student['soyad']}",
             "ogrenciNo": student["ogrenciNo"],
             "date": now.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "Present"
+            "status": "Var"
         })
 
     return {"message": "Katılım başarıyla kaydedildi."}
